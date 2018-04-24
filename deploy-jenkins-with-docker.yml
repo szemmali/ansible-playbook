@@ -1,0 +1,62 @@
+---
+- name: Deploy Jenkins with Docker on Ubuntu
+  hosts: 
+  tasks:
+  
+# Step 1 — Install Docker
+  - name: Deploy Jenkins with Docker
+    host:
+    tasks:
+  - name: Add Docker Group
+    group: name=docker state=present
+
+  - name: Add Docker Signing Key
+    apt_key:
+      keyserver: 'hkp://p80.pool.sks-keyservers.net:80'
+      id: 58118E89F3A912897C070ADBF76221572C52609D
+      state: present
+
+  - name: Add Docker Repo
+    apt_repository:
+      repo: 'deb https://apt.dockerproject.org/repo debian-jessie main'
+      filename: 'docker.list'
+
+  - name: Install Docker
+    apt: name=docker-engine state=present
+
+  - name: Install docker-py
+    pip: name=docker-py version=1.9.0
+   
+# Step 2 — install Jenkins   
+  - name: Ensure jenkins directory on docker host
+    file:
+      state: directory
+      owner: 1000
+      group: 1000
+      path: /share/jenkins
+
+  - name: Pull the latest official jenkins docker image
+    docker_image:
+      name: "jenkins:latest"
+
+  - name: Create a container from the jenkins docker image
+    docker_container:
+     name: "jenkins-server"
+     image: "jenkins"
+     ports:
+        - "8080:8080"
+        - "50000:50000"
+     volumes:
+        - "/share/jenkins:/var/jenkins_home"
+     state: present
+     recreate: no
+
+# Step 3 — create service
+  - name: Copy systemd service script to start and stop the jenkins container
+    copy: src=files/jenkins.service dest=/etc/systemd/system
+
+  - name: Reload systemctl
+    shell: systemctl reload-or-restart docker-jenkins
+
+  - name: Enable the docker-jenkins service
+    shell: systemctl enable docker-jenkins       
