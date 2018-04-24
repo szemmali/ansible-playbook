@@ -53,7 +53,7 @@
 
 # Step 3 — create service
   - name: Copy systemd service script to start and stop the jenkins container
-    copy: src=files/jenkins.service dest=/etc/systemd/system
+    copy: src=./jenkins.service dest=/etc/systemd/system
 
   - name: Reload systemctl
     shell: systemctl reload-or-restart docker-jenkins
